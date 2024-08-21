@@ -10,6 +10,7 @@ import '../stdlib/math_lib.dart';
 import '../stdlib/package_lib.dart';
 import '../stdlib/string_lib.dart';
 import '../stdlib/table_lib.dart';
+import '../stdlib/coroutine_lib.dart';
 import 'package:sprintf/sprintf.dart';
 
 import '../number/lua_number.dart';
@@ -38,6 +39,13 @@ class LuaStateImpl implements LuaState, LuaVM {
 
   LuaStateImpl() {
     registry!.put(luaRidxGlobals, LuaTable(0, 0));
+    LuaStack stack = LuaStack();
+    stack.state = this;
+    _pushLuaStack(stack);
+  }
+
+  LuaStateImpl.newThread(LuaTable registry) {
+    this.registry = registry;
     LuaStack stack = LuaStack();
     stack.state = this;
     _pushLuaStack(stack);
@@ -185,6 +193,24 @@ class LuaStateImpl implements LuaState, LuaVM {
   void pop(int n) {
     for (int i = 0; i < n; i++) {
       _stack!.pop();
+    }
+  }
+
+  @override
+  Object? popObject() {
+    return _stack!.pop();
+  }
+
+  @override
+  void xmove(LuaState from, int n) {
+    List<Object?> vals = <Object?>[];
+
+    for (int i = 0; i < n; i++) {
+      vals.add(from.popObject());
+    }
+
+    for (int i = n - 1; i >= 0; i--) {
+      _stack!.push(vals[i]);
     }
   }
 
@@ -586,6 +612,7 @@ class LuaStateImpl implements LuaState, LuaVM {
     // run closure
     _pushLuaStack(newStack);
     setTop(nRegs);
+    print('debug code ${debugCode(c)}');
     _runLuaClosure();
     _popLuaStack();
 
@@ -620,6 +647,21 @@ class LuaStateImpl implements LuaState, LuaVM {
       //stack.check(results.size())
       _stack!.pushN(results, nResults);
     }
+  }
+
+  String debugCode(Closure c) {
+    StringBuffer sb = StringBuffer();
+
+    if (c.proto == null) {
+      return "no code!";
+    }
+
+    Uint32List code = c.proto!.code;
+    for (int i = 0; i < code.length; i++) {
+      String code_name = Instruction.getOpCode(code[i]).name;
+      sb.write("[${code_name}]");
+    }
+    return sb.toString();
   }
 
   void _runLuaClosure() {
@@ -662,6 +704,17 @@ class LuaStateImpl implements LuaState, LuaVM {
   toDartFunction(int idx) {
     Object? val = _stack!.get(idx);
     return val is Closure ? val.dartFunc : null;
+  }
+
+  @override
+  void pushThread(LuaState L) {
+    _stack!.push(L);
+  }
+
+  @override
+  toThread(int idx) {
+    Object? val = _stack!.get(idx);
+    return val is LuaState ? val : null;
   }
 
   @override
@@ -1028,7 +1081,8 @@ class LuaStateImpl implements LuaState, LuaVM {
       "table": TableLib.openTableLib,
       "string": StringLib.openStringLib,
       "math": MathLib.openMathLib,
-      "os": OSLib.openOSLib
+      "os": OSLib.openOSLib,
+      "coroutine": CoroutineLib.openCoroutineLib,
     };
 
     libs.forEach((name, fun) {
@@ -1301,6 +1355,11 @@ class LuaStateImpl implements LuaState, LuaVM {
           return false;
       });
     }
+  }
+
+  @override
+  LuaState newThread() {
+    return LuaStateImpl.newThread(this.registry!);
   }
 
 //**************************************************

@@ -54,8 +54,9 @@ extension LuaStateDebug on LuaState {
           break;
 
         case LuaType.luaThread:
-          _print(i,t);
+          _print(i,t, 'thread');
           break;
+
         default:
           _print(i,t,"${this.typeName(t)}");
           break;
