@@ -22,6 +22,7 @@ import '../api/lua_vm.dart';
 import '../binchunk/binary_chunk.dart';
 import '../compiler/compiler.dart';
 import '../vm/instruction.dart';
+import '../vm/instructions.dart';
 import '../vm/opcodes.dart';
 import 'arithmetic.dart';
 import 'comparison.dart';
@@ -30,6 +31,7 @@ import 'lua_table.dart';
 import 'lua_value.dart';
 import 'closure.dart';
 import 'upvalue_holder.dart';
+import '../types/thread_cache.dart';
 
 class LuaStateImpl implements LuaState, LuaVM {
   LuaStack? _stack = LuaStack();
@@ -37,11 +39,56 @@ class LuaStateImpl implements LuaState, LuaVM {
   /// 注册表
   LuaTable? registry = LuaTable(0, 0);
 
+  ThreadStatus status = ThreadStatus.luaOk;
+
   LuaStateImpl() {
     registry!.put(luaRidxGlobals, LuaTable(0, 0));
     LuaStack stack = LuaStack();
     stack.state = this;
     _pushLuaStack(stack);
+
+    int newId = _genThreadId();
+    _updateThreadCache(newId);
+  }
+
+  void _updateThreadCache(int newId) {
+    getSubTable(luaRegistryIndex, "_THREADS");
+    LuaType _t = getField(-1, "_THREAD_CACHE");
+    if (_t == LuaType.luaNil) {
+      pop(1);
+      Userdata threadList = newUserdata<ThreadsMap>();
+      ThreadsMap map = ThreadsMap();
+      map[newId] = ThreadCache(newId, this);
+      threadList.data = map;
+      setField(-2, "_THREAD_CACHE");
+    }
+    else {
+
+    }
+
+    pop(1);
+  }
+
+  int _genThreadId() {
+    getSubTable(luaRegistryIndex, "_THREADS");
+    LuaType _t = getField(-1, "_THREAD_ID_GEN");
+    int newId;
+    if (_t == LuaType.luaNil) {
+      pop(1);
+      newId = 1;
+      pushInteger(newId + 1);
+      setField(-2, "_THREAD_ID_GEN");
+    }
+    else {
+      newId = toInteger(-1);
+      pop(1);
+      pushInteger(newId + 1);
+      setField(-2, "_THREAD_ID_GEN");
+    }
+
+    pop(1);
+
+    return newId;
   }
 
   LuaStateImpl.newThread(LuaTable registry) {
@@ -566,7 +613,33 @@ class LuaStateImpl implements LuaState, LuaVM {
   }
 
   @override
-  void call(int nArgs, int nResults) {
+  void resume(int nArgs) {
+    LuaStack lastPopStack = _stack!;
+    _popLuaStack();
+
+    if (nArgs > 0) {
+      _stack!.pushN(lastPopStack.popN(nArgs), nArgs);
+    }
+
+    while (_stack != null) {
+      if (_stack!.closure == null) {
+        break;
+      }
+
+      int c = lastPopStack.closure!.ctx.nResultsByPreviousCall + 1;
+      int lastCode = _stack!.closure!.proto!.code[_stack!.pc - 1];
+      int a = Instruction.getA(lastCode) + 1;
+      popResults(a, c);
+
+      _runLuaClosure();
+
+      lastPopStack = _stack!;
+      _postCallProcess();
+    }
+  }
+
+  @override
+  void call(int nArgs, int nResults, ) {
     Object? val = _stack!.get(-(nArgs + 1));
     Object? f = val is Closure ? val : null;
 
@@ -582,6 +655,7 @@ class LuaStateImpl implements LuaState, LuaVM {
 
     if (f != null) {
       Closure c = f as Closure;
+      c.ctx.nResultsByPreviousCall = nResults;
       if (c.proto != null) {
         _callLuaClosure(nArgs, nResults, c);
       } else {
@@ -589,6 +663,21 @@ class LuaStateImpl implements LuaState, LuaVM {
       }
     } else {
       throw Exception("not function!");
+    }
+  }
+
+  @override
+  void popResults(int a, int c) {
+    if (c == 1) {
+      // no results
+    } else if (c > 1) {
+      for (int i = a + c - 2; i >= a; i--) {
+        replace(i);
+      }
+    } else {
+      // leave results on stack
+      checkStack(1);
+      pushInteger(a);
     }
   }
 
@@ -612,16 +701,10 @@ class LuaStateImpl implements LuaState, LuaVM {
     // run closure
     _pushLuaStack(newStack);
     setTop(nRegs);
-    print('debug code ${debugCode(c)}');
+    // print('debug code ${debugCode(c)}');
     _runLuaClosure();
-    _popLuaStack();
 
-    // return results
-    if (nResults != 0) {
-      List<Object?> results = newStack.popN(newStack.top() - nRegs);
-      //stack.check(results.size())
-      _stack!.pushN(results, nResults);
-    }
+    _postCallProcess();
   }
 
   void _callDartClosure(int nArgs, int nResults, Closure c) {
@@ -649,6 +732,25 @@ class LuaStateImpl implements LuaState, LuaVM {
     }
   }
 
+  void _postCallProcess() {
+    Closure c = _stack!.closure!;
+    int _nResults = c.ctx.nResultsByPreviousCall;
+
+    LuaStack curStack = _stack!;
+    _popLuaStack();
+    if (_nResults != 0) {
+      List<Object?> results = [];
+      if (c.proto != null) {
+        results = curStack.popN(curStack.top() - c.proto!.maxStackSize);
+      }
+      else {
+        // results = curStack.popN(curStack.top() - 1);
+        // TODO: dart closure
+      }
+      _stack!.pushN(results, _nResults);
+    }
+  }
+
   String debugCode(Closure c) {
     StringBuffer sb = StringBuffer();
 
@@ -661,6 +763,8 @@ class LuaStateImpl implements LuaState, LuaVM {
       String code_name = Instruction.getOpCode(code[i]).name;
       sb.write("[${code_name}]");
     }
+
+    sb.write(" pc:${_stack!.pc}\n");
     return sb.toString();
   }
 
@@ -1360,6 +1464,15 @@ class LuaStateImpl implements LuaState, LuaVM {
   @override
   LuaState newThread() {
     return LuaStateImpl.newThread(this.registry!);
+  }
+
+  @override
+  void setStatus(ThreadStatus status) {
+    this.status = status;
+  }
+
+  ThreadStatus getStatus() {
+    return this.status;
   }
 
 //**************************************************

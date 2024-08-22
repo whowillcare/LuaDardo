@@ -35,20 +35,31 @@ class CoroutineLib {
     }
 
     co.xmove(ls, nArgs);
-    co.printStack();
     try {
-      co.call(nArgs, 0);
-    } catch (e) {
-      print('received exception: $e ----------------------------');
-      if (e is LuaYieldException) {
+      if (co.getStatus() == ThreadStatus.luaOk) {
+        co.call(nArgs, 0);
         return 0;
       }
-      return 0;
+      else if (co.getStatus() == ThreadStatus.luaYield) {
+        co.resume(nArgs);
+        return 0;
+      }
+    } catch (e) {
+      if (e is LuaYieldException) {
+        int nRets = co.getTop();
+        ls.xmove(co, nRets);
+        return nRets;
+      }
+      else {
+        print('received exception in resume: [$e] ----------------------------');
+        return 0;
+      }
     }
     return 0;
   }
 
   static int _coYield(LuaState ls) {
+    ls.setStatus(ThreadStatus.luaYield);
     throw LuaYieldException();
     // print('yielding');
     // return 0;

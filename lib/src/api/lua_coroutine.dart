@@ -1,4 +1,5 @@
 import 'lua_state.dart';
+import 'lua_type.dart';
 
 abstract class LuaCoroutineLib {
 
@@ -11,4 +12,10 @@ abstract class LuaCoroutineLib {
   Object? popObject();
 
   LuaState newThread();
+
+  void setStatus(ThreadStatus status);
+
+  ThreadStatus getStatus();
+
+  void resume(int nArgs);
 }
