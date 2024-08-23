@@ -31,7 +31,7 @@ local function test_coroutine()
     local q = test_a(1, 2)
     print('q', q)
     test_coroutine2()
-    print('hwllow')
+    print('test_coroutine end')
 end
 
 local co = coroutine.create(test_coroutine)

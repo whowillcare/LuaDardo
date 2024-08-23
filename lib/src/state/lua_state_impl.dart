@@ -22,7 +22,6 @@ import '../api/lua_vm.dart';
 import '../binchunk/binary_chunk.dart';
 import '../compiler/compiler.dart';
 import '../vm/instruction.dart';
-import '../vm/instructions.dart';
 import '../vm/opcodes.dart';
 import 'arithmetic.dart';
 import 'comparison.dart';

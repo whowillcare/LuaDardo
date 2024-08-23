@@ -1,6 +1,4 @@
 import '../../lua.dart';
-import '../api/lua_state.dart';
-import '../../debug.dart';
 import '../types/exceptions.dart';
 
 
