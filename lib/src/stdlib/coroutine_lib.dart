@@ -9,6 +9,8 @@ class CoroutineLib {
     "create": _coCreate,
     "resume": _coResume,
     "yield": _coYield,
+    "status": _coStatus,
+    'running': _coRunning,
   };
 
   static int openCoroutineLib(LuaState ls) {
@@ -38,11 +40,10 @@ class CoroutineLib {
     try {
       if (co.getStatus() == ThreadStatus.luaOk) {
         co.call(nArgs, 0);
-        return 0;
       }
       else if (co.getStatus() == ThreadStatus.luaYield) {
+        co.setStatus(ThreadStatus.luaOk);
         co.resume(nArgs);
-        return 0;
       }
     } catch (e) {
       if (e is LuaYieldException) {
@@ -52,10 +53,32 @@ class CoroutineLib {
       }
       else {
         print('received exception in resume: [$e] ----------------------------');
+        print('${co.traceStack()}');
         return 0;
       }
     }
+
+    co.setStatus(ThreadStatus.luaDead);
     return 0;
+  }
+
+  static int _coStatus(LuaState ls) {
+    LuaState? co = ls.toThread(1);
+    if (co == null) {
+      ls.pushString("dead");
+    }
+    else {
+      if (co.runningId() == ls.runningId()) {
+        ls.pushString("running");
+      }
+      else if (co.getStatus() == ThreadStatus.luaDead) {
+        ls.pushString("dead");
+      }
+      else {
+        ls.pushString("suspended");
+      }
+    }
+    return 1;
   }
 
   static int _coYield(LuaState ls) {
@@ -63,5 +86,10 @@ class CoroutineLib {
     throw LuaYieldException();
     // print('yielding');
     // return 0;
+  }
+
+  static int _coRunning(LuaState ls) {
+    ls.pushThread(ls);
+    return 1;
   }
 }

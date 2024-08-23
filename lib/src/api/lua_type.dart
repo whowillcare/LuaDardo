@@ -49,6 +49,7 @@ enum ThreadStatus {
   luaErrGcmm,
   luaErrErr,
   luaErrFile,
+  luaDead,
 }
 
 typedef DartFunction = int Function(LuaState ls);

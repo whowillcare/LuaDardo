@@ -28,6 +28,8 @@ abstract class LuaBasicAPI {
 
   void setTop(int idx);
 
+  String traceStack();
+
 /* access functions (stack -> Go); */
   String typeName(LuaType tp);
 

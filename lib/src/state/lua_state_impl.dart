@@ -41,6 +41,8 @@ class LuaStateImpl implements LuaState, LuaVM {
 
   ThreadStatus status = ThreadStatus.luaOk;
 
+  int id = 0;
+
   LuaStateImpl() {
     registry!.put(luaRidxGlobals, LuaTable(0, 0));
     LuaStack stack = LuaStack();
@@ -49,6 +51,18 @@ class LuaStateImpl implements LuaState, LuaVM {
 
     int newId = _genThreadId();
     _updateThreadCache(newId);
+    id = newId;
+  }
+
+  LuaStateImpl.newThread(LuaTable registry) {
+    this.registry = registry;
+    LuaStack stack = LuaStack();
+    stack.state = this;
+    _pushLuaStack(stack);
+
+    int newId = _genThreadId();
+    _updateThreadCache(newId);
+    id = newId;
   }
 
   void _updateThreadCache(int newId) {
@@ -63,7 +77,10 @@ class LuaStateImpl implements LuaState, LuaVM {
       setField(-2, "_THREAD_CACHE");
     }
     else {
-
+      Userdata threadList = toUserdata(-1)!;
+      ThreadsMap map = threadList.data as ThreadsMap;
+      map[newId] = ThreadCache(newId, this);
+      pop(1);
     }
 
     pop(1);
@@ -89,13 +106,6 @@ class LuaStateImpl implements LuaState, LuaVM {
     pop(1);
 
     return newId;
-  }
-
-  LuaStateImpl.newThread(LuaTable registry) {
-    this.registry = registry;
-    LuaStack stack = LuaStack();
-    stack.state = this;
-    _pushLuaStack(stack);
   }
 
   /// 压入调用栈帧
@@ -639,6 +649,11 @@ class LuaStateImpl implements LuaState, LuaVM {
   }
 
   @override
+  int runningId() {
+    return id;
+  }
+
+  @override
   void call(int nArgs, int nResults, ) {
     Object? val = _stack!.get(-(nArgs + 1));
     Object? f = val is Closure ? val : null;
@@ -963,6 +978,7 @@ class LuaStateImpl implements LuaState, LuaVM {
       return ThreadStatus.luaOk;
     } catch (e) {
       if (msgh != 0) {
+        print('${traceStack()}');
         throw e;
       }
       while (_stack != caller) {
@@ -1370,6 +1386,25 @@ class LuaStateImpl implements LuaState, LuaVM {
       pushInteger(ref);
       rawSetI(t, 0); /* t[freelist] = ref */
     }
+  }
+
+  @override
+  String traceStack() {
+    LuaStack? stack = _stack;
+    StringBuffer sb = StringBuffer();
+    while (stack != null && stack.closure != null) {
+      if (stack.closure!.proto != null) {
+        Prototype proto = stack.closure!.proto!;
+        int lineNo = proto.lineInfo[stack.pc - 1];
+        sb.write("    [${proto.source}:${lineNo}]\n");
+      }
+      else {
+        sb.write("    [DART]\n");
+      }
+      stack = stack.prev;
+    }
+
+    return sb.toString();
   }
 
   //**************************************************

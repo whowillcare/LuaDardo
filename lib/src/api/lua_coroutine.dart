@@ -18,4 +18,6 @@ abstract class LuaCoroutineLib {
   ThreadStatus getStatus();
 
   void resume(int nArgs);
+
+  int runningId();
 }
