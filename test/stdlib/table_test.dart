@@ -1,4 +1,4 @@
-import 'package:lua_dardo/lua.dart';
+import 'package:lua_dardo_co/lua.dart';
 import 'package:test/test.dart';
 
 
@@ -22,7 +22,7 @@ print(table.concat(arr, ","))
 
 local a1 = {"a","b","c","d"}
 table.move(a1 ,1,#a1,4)
-print(table.concat(a1, ",")) 
+print(table.concat(a1, ","))
 ''');
     state.pCall(0, 0, 1);
   }catch(e,s){

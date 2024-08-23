@@ -1,4 +1,4 @@
-import 'package:lua_dardo/lua.dart';
+import 'package:lua_dardo_co/lua.dart';
 import 'package:test/test.dart';
 
 
@@ -14,7 +14,7 @@ for i = 1, 100000 do
       s = s + i;
 end
 
-print('sec:'..(os.clock()-start)) 
+print('sec:'..(os.clock()-start))
 ''');
     state.pCall(0, 0, 1);
   }catch(e,s){
