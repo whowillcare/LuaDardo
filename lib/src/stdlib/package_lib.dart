@@ -114,17 +114,15 @@ class PackageLib {
         if (Directory(filename).existsSync()) {
           return filename;
         } else {
-          throw Exception("\n\tno file '" + filename + "'");
         }
       } else {
         if (File(filename).existsSync()) {
           return filename;
         } else {
-          throw Exception("\n\tno file '" + filename + "'");
         }
       }
     }
-    return '';
+    throw Exception("\n\tno file '" + name! + "in ${path}");
   }
 
   // package.searchpath (name, path [, sep [, rep]])

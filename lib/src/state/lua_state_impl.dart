@@ -977,13 +977,12 @@ class LuaStateImpl implements LuaState, LuaVM {
       return ThreadStatus.luaOk;
     } catch (e) {
       if (msgh != 0) {
-        print('${traceStack()}');
         throw e;
       }
       while (_stack != caller) {
         _popLuaStack();
       }
-      _stack!.push("$e"); // TODO
+      _stack!.push("$e\n${traceStack()}"); // TODO
       return ThreadStatus.luaErrRun;
     }
   }

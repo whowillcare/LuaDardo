@@ -8,7 +8,8 @@ class CoroutineLib {
     "resume": _coResume,
     "yield": _coYield,
     "status": _coStatus,
-    'running': _coRunning,
+    "running": _coRunning,
+    "id": _coId,
   };
 
   static int openCoroutineLib(LuaState ls) {
@@ -88,6 +89,17 @@ class CoroutineLib {
 
   static int _coRunning(LuaState ls) {
     ls.pushThread(ls);
+    return 1;
+  }
+
+  static int _coId(LuaState ls) {
+    LuaState? co = ls.toThread(1);
+    if (co == null) {
+      ls.pushNil();
+    }
+    else {
+      ls.pushInteger(co.runningId());
+    }
     return 1;
   }
 }
