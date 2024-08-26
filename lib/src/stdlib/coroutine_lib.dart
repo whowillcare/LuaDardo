@@ -32,10 +32,22 @@ class CoroutineLib {
     int nArgs = ls.getTop() - 1;
     LuaState? co = ls.toThread(1);
     if (co == null) {
-      throw "thread expected";
+      ls.pushBoolean(false);
+      ls.pushString("thread expected");
+      return 2;
+    }
+
+    if (co.getStatus() == ThreadStatus.luaDead) {
+      ls.pushBoolean(false);
+      ls.pushString("cannot resume dead coroutine");
+      return 2;
     }
 
     co.xmove(ls, nArgs);
+    int nRets = ls.getCurrentNResults();
+    if (nRets > 0) {
+      co.resetTopClosureNResults(nRets - 1);
+    }
     try {
       if (co.getStatus() == ThreadStatus.luaOk) {
         co.call(nArgs, 0);
@@ -46,19 +58,27 @@ class CoroutineLib {
       }
     } catch (e) {
       if (e is LuaYieldException) {
-        int nRets = co.getTop();
+        nRets = co.getTop();
+        ls.pushBoolean(true);
         ls.xmove(co, nRets);
-        return nRets;
+        return nRets + 1;
       }
       else {
-        print('received exception in resume: [$e] ----------------------------');
-        print('${co.traceStack()}');
-        return 0;
+        ls.pushBoolean(false);
+        ls.pushString('error: $e\n${co.traceStack()}');
+        return 2;
       }
     }
 
     co.setStatus(ThreadStatus.luaDead);
-    return 0;
+    if (nRets == 1) {
+      ls.pushBoolean(true);
+    }
+    else if (nRets > 1){
+      ls.pushBoolean(true);
+      ls.xmove(co, nRets - 1);
+    }
+    return nRets;
   }
 
   static int _coStatus(LuaState ls) {

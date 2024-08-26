@@ -501,6 +501,9 @@ class LuaStateImpl implements LuaState, LuaVM {
 
     if (val is LuaTable) {
       pushInteger(val.length());
+    }
+    else if (val is String) {
+      pushInteger(val.length);
     } else {
       throw Exception("length error!");
     }
@@ -746,6 +749,38 @@ class LuaStateImpl implements LuaState, LuaVM {
     }
   }
 
+  @override
+  int getCurrentNResults() {
+    return _stack!.closure!.ctx.nResultsByPreviousCall;
+  }
+
+  Closure? getTopClosure() {
+    LuaStack _tmp = this._stack!;
+    if (_tmp.closure == null) {
+      return null;
+    }
+
+    if (_tmp.prev == null) {
+      return _tmp.closure;
+    }
+
+    while (_tmp.prev!.closure != null) {
+      _tmp = _tmp.prev!;
+    }
+
+    return _tmp.closure;
+  }
+
+  @override
+  void resetTopClosureNResults(int nResults) {
+    Closure? c = getTopClosure();
+    if (c == null) {
+      return;
+    }
+
+    c.ctx.nResultsByPreviousCall = nResults;
+  }
+
   void _postCallProcess() {
     Closure c = _stack!.closure!;
     int _nResults = c.ctx.nResultsByPreviousCall;
@@ -979,10 +1014,11 @@ class LuaStateImpl implements LuaState, LuaVM {
       if (msgh != 0) {
         throw e;
       }
+      String trace = traceStack();
       while (_stack != caller) {
         _popLuaStack();
       }
-      _stack!.push("$e\n${traceStack()}"); // TODO
+      _stack!.push("$e\n${trace}"); // TODO
       return ThreadStatus.luaErrRun;
     }
   }

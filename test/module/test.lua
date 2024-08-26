@@ -32,21 +32,25 @@ local function test_coroutine()
     print('q', q)
     test_coroutine2()
     print('test_coroutine end')
+    return 1, 2, 3
 end
 
 local co = coroutine.create(test_coroutine)
 
 print('will test coroutine')
-print(coroutine.resume(co, 1, 2))
+local st, year = coroutine.resume(co, 1, 2)
+print('final ------> status, year', st, year)
 
 print('will test coroutine2')
-print(coroutine.resume(co, 3, 4))
+st, year = coroutine.resume(co, 3, 4)
+print('final ------> status, year2', st, year)
 
 print('is suspended', coroutine.status(co))
 
 print('coroutine 3', coroutine.running())
 
-print(coroutine.resume(co, 5, 6))
+local status, a, b, c = coroutine.resume(co, 5, 6)
+print('final ------> status', status, a, b, c)
 
 print('is dead', coroutine.status(co))
 

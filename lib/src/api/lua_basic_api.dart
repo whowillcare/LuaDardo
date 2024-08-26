@@ -160,4 +160,8 @@ abstract class LuaBasicAPI {
   int error();
 
   bool stringToNumber(String s);
+
+  int getCurrentNResults();
+
+  void resetTopClosureNResults(int nResults);
 }
