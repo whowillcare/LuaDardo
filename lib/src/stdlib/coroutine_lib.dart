@@ -64,8 +64,10 @@ class CoroutineLib {
         return nRets + 1;
       }
       else {
+        String msg = 'error: $e\n${co.traceStack()}';
+        print(msg);
         ls.pushBoolean(false);
-        ls.pushString('error: $e\n${co.traceStack()}');
+        ls.pushString(msg);
         return 2;
       }
     }

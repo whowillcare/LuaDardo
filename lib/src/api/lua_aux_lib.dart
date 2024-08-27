@@ -1,4 +1,5 @@
 import 'lua_type.dart';
+import '../state/lua_table.dart';
 
 abstract class LuaAuxLib {
 
@@ -21,6 +22,8 @@ abstract class LuaAuxLib {
   double? checkNumber(int arg);
 
   String? checkString(int arg);
+
+  LuaTable? checkTable(int arg);
 
   int? optInteger(int arg, int? d);
 

@@ -1123,6 +1123,15 @@ class LuaStateImpl implements LuaState, LuaVM {
   }
 
   @override
+  LuaTable checkTable(int arg) {
+    if (type(arg) != LuaType.luaTable) {
+      tagError(arg, LuaType.luaTable);
+    }
+
+    return _stack!.get(arg) as LuaTable;
+  }
+
+  @override
   void checkType(int arg, LuaType t) {
     if (type(arg) != t) {
       tagError(arg, t);
