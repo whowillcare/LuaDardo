@@ -1,6 +1,6 @@
 name: lua_dardo_co
 description: A Lua virtual machine from lua_dardo, coroutine added.
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/shanlihou/LuaDardo.git
 
 environment:
