@@ -25,8 +25,22 @@ int callLuaAdd(int a,int b){
   return -1;
 }
 
+class Abcd {
+  String a;
+  int b;
+  Abcd(this.a,this.b);
+}
+
+void setA(Abcd? a) {
+  a = Abcd("a", 1);
+}
+
 void main() {
   test('lua require function load module test', () {
     expect(callLuaAdd(10,8), 10+8);
   });
+
+  Abcd? a;
+  setA(a);
+  print('a is $a');
 }

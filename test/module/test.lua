@@ -56,4 +56,6 @@ print('is dead', coroutine.status(co))
 
 print('coroutine 4', coroutine.running())
 
-
+a = "abcde"
+local aa, bb = a:match("(b)c(d)e()")
+print('-------------------------aa, bb', aa, bb)

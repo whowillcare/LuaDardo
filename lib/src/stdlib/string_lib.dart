@@ -398,9 +398,23 @@ class StringLib {
       tail = s!.substring(init - 1);
     }
 
-    var regExpMatch = RegExp(pattern).firstMatch(tail!);
-    if (regExpMatch == null) return null;
-    return [regExpMatch.group(0)];
+    RegExp p = RegExp(pattern);
+
+    var regExpMatch = p.firstMatch(tail!);
+
+    List<String> ret = [];
+    if (regExpMatch != null) {
+      if (regExpMatch.groupCount == 0) {
+        ret.add(regExpMatch.group(0)!);
+      }
+      else {
+        for (var i = 0; i < regExpMatch.groupCount; i++) {
+          ret.add(regExpMatch.group(i + 1)!);
+        }
+      }
+    }
+
+    return ret;
   }
 
 // string.gsub (s, pattern, repl [, n])

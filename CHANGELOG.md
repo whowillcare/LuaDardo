@@ -9,3 +9,6 @@
 
 ## 0.0.3
 * fix bug in coroutine
+
+## 0.0.4
+* fix num minus bug
