@@ -2,6 +2,7 @@ import 'package:sprintf/sprintf.dart';
 
 import '../api/lua_state.dart';
 import '../api/lua_type.dart';
+import '../types/regexp/reg_state.dart';
 
 class StringLib {
   static final tagPattern =
@@ -379,20 +380,44 @@ class StringLib {
       return 1;
     }
 
-    var captures = match(s, pattern!, init);
-
-    if (captures == null || captures.isEmpty) {
-      ls.pushNil();
-      return 1;
-    } else {
-      for (var s in captures) {
-        ls.pushString(s);
-      }
-      return captures.length;
-    }
+    int ret;
+    (ret, _) = _match(s, pattern!, init - 1, ls);
+    return ret;
   }
 
-  static List<String?>? match(String? s, String pattern, int init) {
+  static (int, int) _match(String s, String pattern, int init, LuaState ls) {
+    RegState state = RegState(pattern);
+    var match = state.firstMatch(s, init);
+    if (match == null) {
+      return (0, 0);
+    }
+
+    if (match.groupCount == 0) {
+      ls.pushString(match.group(0));
+      return (1, match.endPos());
+    }
+
+    for (int i = 0; i < match.groupCount; i++) {
+      if (match.isPosition(i + 1)) {
+        ls.pushInteger(match.matchSlice(i + 1)!.start + 1);
+      }
+      else {
+        ls.pushString(match.group(i + 1)!);
+      }
+    }
+
+    return (match.groupCount, match.endPos());
+  }
+
+  // static List<String> _match(String s, String pattern, int init) {
+  //   RegState state = RegState(pattern);
+  //   var matches = state.matchAll(s, init);
+  //   for (var m in matches) {
+  //
+  //   }
+  // }
+
+  static List<String?>? _matchOld(String? s, String pattern, int init) {
     var tail = s;
     if (init > 1) {
       tail = s!.substring(init - 1);
@@ -467,22 +492,12 @@ class StringLib {
   static int _strGmatch(LuaState ls) {
     var s = ls.checkString(1);
     var pattern = ls.checkString(2);
+    int init = 0;
 
     Function gmatchAux = (LuaState ls) {
-      var captures = match(s, pattern!, 1);
-      if (captures != null) {
-        String? last;
-        for (var i = 0; i < captures.length; i++) {
-          ls.pushString(captures[i]);
-          if (i == captures.length - 1) {
-            last = captures[i];
-          }
-        }
-        s = s!.substring(s!.lastIndexOf(last!) + last.length + 1);
-        return captures.length;
-      } else {
-        return 0;
-      }
+      int ret;
+      (ret, init) = _match(s!, pattern!, init, ls);
+      return ret;
     };
 
     ls.pushDartFunction(gmatchAux as int Function(LuaState));
