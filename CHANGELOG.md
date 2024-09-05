@@ -12,3 +12,6 @@
 
 ## 0.0.4
 * fix num minus bug
+
+## 0.0.5
+* refactor the regexp to be consistent with the lua
