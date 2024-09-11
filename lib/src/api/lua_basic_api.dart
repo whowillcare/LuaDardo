@@ -164,4 +164,6 @@ abstract class LuaBasicAPI {
   int getCurrentNResults();
 
   void resetTopClosureNResults(int nResults);
+
+  void balanceClosureNResults();
 }

@@ -425,6 +425,7 @@ class Instructions {
     } else if (b > 1) {
       // b-1 return values
       vm.checkStack(b - 1);
+      vm.balanceClosureNResults();
       for (int j = a; j <= a + b - 2; j++) {
         vm.pushValue(j);
       }

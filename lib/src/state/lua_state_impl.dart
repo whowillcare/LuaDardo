@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:lua_dardo_co/src/state/lua_userdata.dart';
 import 'package:lua_dardo_co/src/stdlib/os_lib.dart';
+// import 'package:stack_trace/stack_trace.dart';
 
 import '../stdlib/math_lib.dart';
 
@@ -19,6 +20,7 @@ import '../stdlib/basic_lib.dart';
 import '../api/lua_state.dart';
 import '../api/lua_type.dart';
 import '../api/lua_vm.dart';
+import '../api/lua_debug.dart';
 import '../binchunk/binary_chunk.dart';
 import '../compiler/compiler.dart';
 import '../vm/instruction.dart';
@@ -31,7 +33,9 @@ import 'lua_value.dart';
 import 'closure.dart';
 import 'upvalue_holder.dart';
 import '../types/thread_cache.dart';
+// import '../types/test_mixin.dart';
 
+// class LuaStateImpl with TestMixin implements LuaState, LuaVM {
 class LuaStateImpl implements LuaState, LuaVM {
   LuaStack? _stack = LuaStack();
 
@@ -39,6 +43,7 @@ class LuaStateImpl implements LuaState, LuaVM {
   LuaTable? registry = LuaTable(0, 0);
 
   ThreadStatus status = ThreadStatus.luaOk;
+  final List<HookContext> hookList = [];
 
   int id = 0;
 
@@ -350,7 +355,17 @@ class LuaStateImpl implements LuaState, LuaVM {
   @override
   int? toIntegerX(int idx) {
     Object? val = _stack!.get(idx);
-    return val is int ? val : null;
+    if (val is int) {
+      return val;
+    } else if (val is String) {
+      try {
+        return int.parse(val);
+      } catch (e) {
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   @override
@@ -366,6 +381,13 @@ class LuaStateImpl implements LuaState, LuaVM {
       return val;
     } else if (val is int) {
       return val.toDouble();
+    } else if (val is String) {
+      try {
+        return double.parse(val);
+      } 
+      catch (e) {
+        return null;
+      }
     } else {
       return null;
     }
@@ -800,6 +822,10 @@ class LuaStateImpl implements LuaState, LuaVM {
     }
   }
 
+  void balanceClosureNResults() {
+    _stack!.closure!.proto!.maxStackSize = _stack!.top();
+  }
+
   String debugCode(Closure c) {
     StringBuffer sb = StringBuffer();
 
@@ -820,6 +846,11 @@ class LuaStateImpl implements LuaState, LuaVM {
   void _runLuaClosure() {
     for (;;) {
       int i = fetch();
+
+      if (hookList.length != 0) {
+        _triggerHook();
+      }
+
       OpCode opCode = Instruction.getOpCode(i);
       opCode.action!.call(i, this);
       if (opCode.name == "RETURN") {
@@ -1010,11 +1041,13 @@ class LuaStateImpl implements LuaState, LuaVM {
     try {
       call(nArgs, nResults);
       return ThreadStatus.luaOk;
-    } catch (e) {
+    } catch (e, s) {
       if (msgh != 0) {
         throw e;
       }
-      String trace = traceStack();
+
+      String trace = "$e\n\n${s.toString()}\n\n${traceStack()}";
+
       while (_stack != caller) {
         _popLuaStack();
       }
@@ -1552,6 +1585,31 @@ class LuaStateImpl implements LuaState, LuaVM {
   ThreadStatus getStatus() {
     return this.status;
   }
+
+  //************************************ lua debug start **********************************
+  void setHook(HookContext context) {
+    for (var c in this.hookList) {
+      if (c.hookId == context.hookId) {
+        return;
+      }
+    }
+
+    this.hookList.add(context);
+  }
+
+  void _triggerHook() {
+    var proto = _stack!.closure!.proto!;
+
+    int lineNo = proto.lineInfo[_stack!.pc - 1];
+    String fileName = proto.source!;
+
+    for (var c in this.hookList) {
+      if (c.isHooked(fileName, lineNo)) {
+        c.triggerHook();
+      }
+    }
+  }
+  //************************************ lua debug end ************************************
 
 //**************************************************
 //**************************************************

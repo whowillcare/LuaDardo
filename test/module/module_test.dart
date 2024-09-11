@@ -43,4 +43,18 @@ void main() {
   Abcd? a;
   setA(a);
   print('a is $a');
+
+  double q;
+  try {
+    q = double.parse("qqq");
+  } catch (e) {
+    q = 0.0;
+  }
+  print("double a is $q");
+
+  List<int> list = [1, 2, 3, 4, 5];
+  list.length = 3;
+  for (var i in list) {
+    print('test length $i');
+  }
 }

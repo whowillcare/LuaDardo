@@ -4,8 +4,9 @@ import './match_slice.dart';
 class Match {
   final String source;
   final List<int> _match;
+  final List<bool> _isPosition;
 
-  Match(this.source , this._match);
+  Match(this.source , this._match, this._isPosition);
 
   @override
   String toString() {
@@ -25,7 +26,7 @@ class Match {
       return false;
     }
 
-    return _match[group * 2] == _match[group * 2 + 1];
+    return _isPosition[group];
   }
 
   String? group(int group) {

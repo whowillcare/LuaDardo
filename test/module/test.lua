@@ -56,14 +56,18 @@ print('is dead', coroutine.status(co))
 
 print('coroutine 4', coroutine.running())
 
-a = "abcde"
-local aa, pp, bb, cc = a:match("(b)c()(d)e()")
-print('-------------------------aa, bb', aa, pp, bb, cc)
 
+a = [[
+   message Phone {
+      optional string name        = 1;
+      optional int64  phonenumber = 2;
+   }
+   message Person {
+      optional string name     = 1;
+      optional int32  age      = 2;
+      optional string address  = 3;
+      repeated Phone  contacts = 4;
+   } ]]
+local ns, oct, hex, s, pos = a:match("^([+-]?)(0?)([xX]?)([0-9a-fA-F]+)%s*()", 56)
+print('ns is ', ns, 'oct is ', oct, 'hex is ', hex, 's is ', s, 'pos is ', pos)
 
-
-a = "223babc 123def"
-local qq = string.gmatch(a, "(%d+)(%w+)")
-print('qq', qq())
-print('qq', qq())
-print('qq', qq())

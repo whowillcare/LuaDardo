@@ -6,7 +6,7 @@ const int MAX_CAPTURES = 32;
 const CAP_UNFINISHED = -1;
 const CAP_POSITION = -2;
 
-const MAX_CALLS = 200;
+const MAX_CALLS = 1024;
 
 class Capture {
   int init;
@@ -66,32 +66,36 @@ class RegState {
     do {
       represtate();
       int res;
-      try {
+      // try {
         res = match(s, p);
-      }
-      catch (e) {
-        // print('e is $e');
-        res = -1;
-      }
+      // }
+      // catch (e) {
+      //   print('e is $e');
+      //   res = -1;
+      // }
 
       if(res != -1) {
         List<int> find = [];
+        List<bool> isPosition = [];
         find.add(s);
         find.add(res);
+        isPosition.add(false);
 
         for (int i = 0; i < captures.length; i++) {
           var cap = captures[i];
           find.add(cap.init);
           if (cap.len == CAP_POSITION) {
             find.add(cap.init);
+            isPosition.add(true);
           }
           else {
             find.add(cap.init + cap.len);
+            isPosition.add(false);
           }
         }
 
         s = res - 1;
-        matches.add(Match(input, find));
+        matches.add(Match(input, find, isPosition));
         if (isFirst) {
           break;
         }
@@ -403,7 +407,10 @@ class RegState {
   int dflt(int inputPos, int patternPos) {
     int ep = classend(patternPos);
     if (!singleMatch(inputPos, patternPos, ep)) {
-      int epChar = pattern.codeUnitAt(ep);
+      int epChar = 0;
+      if (ep < pattern.length) {
+        epChar = pattern.codeUnitAt(ep);
+      }
       // * ascii is 42
       // ? ascii is 63
       // - ascii is 45
