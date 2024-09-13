@@ -923,6 +923,32 @@ class LuaStateImpl implements LuaState, LuaVM {
   }
 
   @override
+  void pushLightUserdata(Object p) {
+    _stack!.push(p);
+  }
+
+  int _relindex(int idx, int offset) {
+    if (idx < 0 && idx > luaRegistryIndex) {
+      return idx - offset;
+    } else {
+      return idx;
+    }
+  }
+
+  @override
+  void rawSetP(int idx, Object p) {
+    pushLightUserdata(p);
+    insert(-2);
+    rawSet(_relindex(idx, 1));
+  }
+
+  @override
+  LuaType rawGetP(int idx, Object p) {
+    pushLightUserdata(p);
+    return rawGet(_relindex(idx, 1));
+  }
+
+  @override
   void register(String name, f) {
     pushDartFunction(f);
     setGlobal(name);

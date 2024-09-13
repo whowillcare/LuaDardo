@@ -98,6 +98,12 @@ abstract class LuaBasicAPI {
 
   void pushGlobalTable();
 
+  void pushLightUserdata(Object p);
+
+  void rawSetP(int idx, Object p);
+
+  LuaType rawGetP(int idx, Object p);
+
 /* comparison and arithmetic functions */
   void arith(ArithOp op);
 

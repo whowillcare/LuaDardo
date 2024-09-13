@@ -15,3 +15,11 @@
 
 ## 0.0.5
 * refactor the regexp to be consistent with the lua
+
+## 0.0.6
+* fix bug in regexp, if find empty string will return pos
+* OP_CODE OP_RETURN will balance the max stack size for return stack
+
+## 0.0.7
+* add rawGetP rawSetP
+* refactor the code test

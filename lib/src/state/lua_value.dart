@@ -25,7 +25,7 @@ class LuaValue {
     } else if (val is LuaState) {
       return LuaType.luaThread;
     } else {
-      throw Exception("TODO");
+      return LuaType.luaLightUserdata;
     }
   }
 

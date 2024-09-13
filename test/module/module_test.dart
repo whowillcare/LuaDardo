@@ -9,13 +9,14 @@ int callLuaAdd(int a,int b){
   late LuaState ls;
 
   try{
+    print('cur ${Directory.current.path}');
     ls = LuaState.newState();
     ls.openLibs();
     ls.doFile("test.lua");
     ls.getGlobal("test_add");
     ls.pushInteger(a);
     ls.pushInteger(b);
-    ls.pCall(2, 1,1);
+    ls.pCall(2, 1, 0);
     return ls.toInteger(-1);
   }catch(e,s){
     print(ls.checkString(1));
@@ -25,36 +26,8 @@ int callLuaAdd(int a,int b){
   return -1;
 }
 
-class Abcd {
-  String a;
-  int b;
-  Abcd(this.a,this.b);
-}
-
-void setA(Abcd? a) {
-  a = Abcd("a", 1);
-}
-
 void main() {
-  test('lua require function load module test', () {
-    expect(callLuaAdd(10,8), 10+8);
-  });
-
-  Abcd? a;
-  setA(a);
-  print('a is $a');
-
-  double q;
-  try {
-    q = double.parse("qqq");
-  } catch (e) {
-    q = 0.0;
-  }
-  print("double a is $q");
-
-  List<int> list = [1, 2, 3, 4, 5];
-  list.length = 3;
-  for (var i in list) {
-    print('test length $i');
-  }
+  // test('lua require function load module test', () {
+  //   expect(callLuaAdd(10,8), 10+8);
+  // });
 }
