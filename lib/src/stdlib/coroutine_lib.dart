@@ -50,7 +50,7 @@ class CoroutineLib {
     }
     try {
       if (co.getStatus() == ThreadStatus.luaOk) {
-        co.call(nArgs, 0);
+        co.call(nArgs, nRets - 1);
       }
       else if (co.getStatus() == ThreadStatus.luaYield) {
         co.setStatus(ThreadStatus.luaOk);
