@@ -12,6 +12,7 @@ import '../stdlib/package_lib.dart';
 import '../stdlib/string_lib.dart';
 import '../stdlib/table_lib.dart';
 import '../stdlib/coroutine_lib.dart';
+import '../stdlib/io_lib.dart';
 import 'package:sprintf/sprintf.dart';
 
 import '../number/lua_number.dart';
@@ -129,6 +130,10 @@ class LuaStateImpl implements LuaState, LuaVM {
     if (val is LuaTable) {
       return val.metatable;
     }
+    else if (val is Userdata) {
+      return val.metatable;
+    }
+
     String key = "_MT${LuaValue.typeOf(val)}";
     Object? mt = registry!.get(key);
     return mt != null ? (mt as LuaTable) : null;
@@ -139,6 +144,11 @@ class LuaStateImpl implements LuaState, LuaVM {
       val.metatable = mt;
       return;
     }
+    else if (val is Userdata) {
+      val.metatable = mt;
+      return;
+    }
+
     String key = "_MT${LuaValue.typeOf(val)}";
     registry!.put(key, mt);
   }
@@ -1305,6 +1315,7 @@ class LuaStateImpl implements LuaState, LuaVM {
       "math": MathLib.openMathLib,
       "os": OSLib.openOSLib,
       "coroutine": CoroutineLib.openCoroutineLib,
+      "io": IOLib.openIOLib,
     };
 
     libs.forEach((name, fun) {

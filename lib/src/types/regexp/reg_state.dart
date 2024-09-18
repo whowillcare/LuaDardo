@@ -42,16 +42,16 @@ class RegState {
   }
 
 
-  List<Match> matchAll(String input, [int initPos = 0]) {
-    return _matchAll(input, initPos, false);
+  List<Match> matchAll(String input, [int initPos = 0, int times = -1]) {
+    return _matchAll(input, initPos, times);
   }
 
   Match? firstMatch(String input, [int initPos = 0]) {
-    List<Match> matches = _matchAll(input, initPos, true);
+    List<Match> matches = _matchAll(input, initPos, 1);
     return matches.isEmpty ? null : matches[0];
   }
 
-  List<Match> _matchAll(String input, int initPos, bool isFirst) {
+  List<Match> _matchAll(String input, int initPos, int maxTimes) {
     this.input = input;
     this.initPos = initPos;
     matchDepth = MAX_CALLS;
@@ -96,7 +96,8 @@ class RegState {
 
         s = res - 1;
         matches.add(Match(input, find, isPosition));
-        if (isFirst) {
+        maxTimes--;
+        if (maxTimes == 0) {
           break;
         }
       }
@@ -141,7 +142,7 @@ class RegState {
         inputPos = (inputPos == input.length) ? inputPos : -1;
         break;
 
-      case 92: // \ ascii is 92
+      //case 92: // \ ascii is 92
       case 37: // % ascii is 37
         switch (pattern.codeUnitAt(patternPos + 1)) {
           case 98: // b ascii is 98
@@ -266,7 +267,7 @@ class RegState {
 
   int classend(int patternPos) {
     switch (pattern.codeUnitAt(patternPos++)) {
-      case 92: // \ ascii is 92
+      //case 92: // \ ascii is 92
       case 37: // % ascii is 37
         if (patternPos == pattern.length) {
           throw Exception('malformed pattern (ends with %)');
@@ -346,7 +347,7 @@ class RegState {
       switch (pattern.codeUnitAt(p)) {
         case 46: // . ascii is 46
           return true;
-        case 92: // \ ascii is 92
+        //case 92: // \ ascii is 92
         case 37: // % ascii is 37
           return matchClass(c, pattern.codeUnitAt(p + 1));
         case 91: // [ ascii is 91
@@ -461,7 +462,7 @@ class RegState {
     int level = captureToClose();
     int res;
     captures[level].len = inputPos - captures[level].init;
-    if ((res = match(inputPos, patternPos)) == 0) {
+    if ((res = match(inputPos, patternPos)) == -1) {
       captures[level].len = CAP_UNFINISHED;
     }
 

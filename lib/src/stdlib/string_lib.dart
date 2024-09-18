@@ -3,6 +3,7 @@ import 'package:sprintf/sprintf.dart';
 import '../api/lua_state.dart';
 import '../api/lua_type.dart';
 import '../types/regexp/reg_state.dart';
+import '../types/regexp/match.dart' as luaMatch;
 
 class StringLib {
   static final tagPattern =
@@ -385,16 +386,10 @@ class StringLib {
     return ret;
   }
 
-  static (int, int) _match(String s, String pattern, int init, LuaState ls) {
-    RegState state = RegState(pattern);
-    var match = state.firstMatch(s, init);
-    if (match == null) {
-      return (0, 0);
-    }
-
+  static int _pushMatchResult(LuaState ls, luaMatch.Match match) {
     if (match.groupCount == 0) {
       ls.pushString(match.group(0));
-      return (1, match.endPos());
+      return 1;
     }
 
     for (int i = 0; i < match.groupCount; i++) {
@@ -406,45 +401,68 @@ class StringLib {
       }
     }
 
-    return (match.groupCount, match.endPos());
+    return match.groupCount;
   }
 
-  // static List<String> _match(String s, String pattern, int init) {
-  //   RegState state = RegState(pattern);
-  //   var matches = state.matchAll(s, init);
-  //   for (var m in matches) {
-  //
-  //   }
-  // }
-
-  static List<String?>? _matchOld(String? s, String pattern, int init) {
-    var tail = s;
-    if (init > 1) {
-      tail = s!.substring(init - 1);
+  static (int, int) _match(String s, String pattern, int init, LuaState ls) {
+    RegState state = RegState(pattern);
+    var match = state.firstMatch(s, init);
+    if (match == null) {
+      return (0, 0);
     }
 
-    RegExp p = RegExp(pattern);
+    int cnt = _pushMatchResult(ls, match);
 
-    var regExpMatch = p.firstMatch(tail!);
+    return (cnt, match.endPos());
+  }
 
-    List<String> ret = [];
-    if (regExpMatch != null) {
-      if (regExpMatch.groupCount == 0) {
-        ret.add(regExpMatch.group(0)!);
-      }
-      else {
-        for (var i = 0; i < regExpMatch.groupCount; i++) {
-          ret.add(regExpMatch.group(i + 1)!);
-        }
-      }
+  static int _strGsub(LuaState ls) {
+    var s = ls.checkString(1);
+    var pattern = ls.checkString(2)!;
+    var n = ls.optInteger(4, -1)!;
+
+    RegState state = RegState(pattern);
+    var matchList = state.matchAll(s!, 0, n);
+    if (matchList.isEmpty) {
+      ls.pushString(s);
+      ls.pushInteger(0);
+      return 2;
     }
 
-    return ret;
+    List<String> results = [];
+    int lastEnd = 0;
+    int top = ls.getTop();
+    for (var match in matchList) {
+      results.add(s.substring(lastEnd, match.startPos()));
+      switch (ls.type(3)) {
+        case LuaType.luaFunction:
+          ls.pushValue(3);
+          int cnt = _pushMatchResult(ls, match);
+          ls.call(cnt, 1);
+          results.add(ls.checkString(-1)!);
+          lastEnd = match.endPos();
+        case LuaType.luaString:
+          results.add(match.replace(ls.checkString(3)!));
+          lastEnd = match.endPos();
+          break;
+        default:
+          throw Exception("string.gsub: invalid replacement value");
+      }
+      ls.setTop(top);
+    }
+
+    if (lastEnd < s.length) {
+      results.add(s.substring(lastEnd));
+    }
+
+    ls.pushString(results.join());
+    ls.pushInteger(matchList.length);
+    return 2;
   }
 
 // string.gsub (s, pattern, repl [, n])
 // http://www.lua.org/manual/5.3/manual.html#pdf-string.gsub
-  static int _strGsub(LuaState ls) {
+  static int _strGsubStr(LuaState ls) {
     var s = ls.checkString(1);
     var pattern = ls.checkString(2)!;
     var repl = ls.checkString(3); // todo

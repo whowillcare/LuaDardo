@@ -56,7 +56,7 @@ class CoroutineLib {
         co.setStatus(ThreadStatus.luaOk);
         co.resume(nArgs);
       }
-    } catch (e) {
+    } catch (e, s) {
       if (e is LuaYieldException) {
         nRets = co.getTop();
         ls.pushBoolean(true);
@@ -64,7 +64,7 @@ class CoroutineLib {
         return nRets + 1;
       }
       else {
-        String msg = 'error: $e\n${co.traceStack()}';
+        String msg = 'error: $e\n\n${s.toString()}\n\n${co.traceStack()}';
         print(msg);
         ls.pushBoolean(false);
         ls.pushString(msg);

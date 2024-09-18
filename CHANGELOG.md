@@ -23,3 +23,9 @@
 ## 0.0.7
 * add rawGetP rawSetP
 * refactor the code test
+
+## 0.0.8
+* fix bug of coroutine return arg num
+
+## 0.0.9
+* fix bug of str regexp
