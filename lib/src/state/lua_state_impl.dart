@@ -80,8 +80,7 @@ class LuaStateImpl implements LuaState, LuaVM {
       map[newId] = ThreadCache(newId, this);
       threadList.data = map;
       setField(-2, "_THREAD_CACHE");
-    }
-    else {
+    } else {
       Userdata threadList = toUserdata(-1)!;
       ThreadsMap map = threadList.data as ThreadsMap;
       map[newId] = ThreadCache(newId, this);
@@ -100,8 +99,7 @@ class LuaStateImpl implements LuaState, LuaVM {
       newId = 1;
       pushInteger(newId + 1);
       setField(-2, "_THREAD_ID_GEN");
-    }
-    else {
+    } else {
       newId = toInteger(-1);
       pop(1);
       pushInteger(newId + 1);
@@ -129,8 +127,7 @@ class LuaStateImpl implements LuaState, LuaVM {
   LuaTable? _getMetatable(Object? val) {
     if (val is LuaTable) {
       return val.metatable;
-    }
-    else if (val is Userdata) {
+    } else if (val is Userdata) {
       return val.metatable;
     }
 
@@ -143,8 +140,7 @@ class LuaStateImpl implements LuaState, LuaVM {
     if (val is LuaTable) {
       val.metatable = mt;
       return;
-    }
-    else if (val is Userdata) {
+    } else if (val is Userdata) {
       val.metatable = mt;
       return;
     }
@@ -394,8 +390,7 @@ class LuaStateImpl implements LuaState, LuaVM {
     } else if (val is String) {
       try {
         return double.parse(val);
-      } 
-      catch (e) {
+      } catch (e) {
         return null;
       }
     } else {
@@ -533,8 +528,7 @@ class LuaStateImpl implements LuaState, LuaVM {
 
     if (val is LuaTable) {
       pushInteger(val.length());
-    }
-    else if (val is String) {
+    } else if (val is String) {
       pushInteger(val.length);
     } else {
       throw Exception("length error!");
@@ -688,7 +682,10 @@ class LuaStateImpl implements LuaState, LuaVM {
   }
 
   @override
-  void call(int nArgs, int nResults, ) {
+  void call(
+    int nArgs,
+    int nResults,
+  ) {
     Object? val = _stack!.get(-(nArgs + 1));
     Object? f = val is Closure ? val : null;
 
@@ -823,8 +820,7 @@ class LuaStateImpl implements LuaState, LuaVM {
       List<Object?> results = [];
       if (c.proto != null) {
         results = curStack.popN(curStack.top() - c.proto!.maxStackSize);
-      }
-      else {
+      } else {
         // results = curStack.popN(curStack.top() - 1);
         // TODO: dart closure
       }
@@ -1291,7 +1287,7 @@ class LuaStateImpl implements LuaState, LuaVM {
 
   @override
   ThreadStatus loadString(String s) {
-    return load(utf8.encode(s) as Uint8List, s, "bt");
+    return load(utf8.encode(s), s, "bt");
   }
 
   @override
@@ -1510,8 +1506,7 @@ class LuaStateImpl implements LuaState, LuaVM {
         Prototype proto = stack.closure!.proto!;
         int lineNo = proto.lineInfo[stack.pc - 1];
         sb.write("    [${proto.source}:${lineNo}]\n");
-      }
-      else {
+      } else {
         sb.write("    [DART]\n");
       }
       stack = stack.prev;

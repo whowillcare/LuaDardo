@@ -1,14 +1,12 @@
 import 'dart:io';
 
 import 'package:lua_dardo_co/lua.dart';
-import 'package:test/test.dart';
 
-
-int callLuaAdd(int a,int b){
+int callLuaAdd(int a, int b) {
   Directory.current = './test/module/';
   late LuaState ls;
 
-  try{
+  try {
     print('cur ${Directory.current.path}');
     ls = LuaState.newState();
     ls.openLibs();
@@ -18,7 +16,7 @@ int callLuaAdd(int a,int b){
     ls.pushInteger(b);
     ls.pCall(2, 1, 0);
     return ls.toInteger(-1);
-  }catch(e,s){
+  } catch (e, s) {
     print(ls.checkString(1));
     print(e);
     print(s);
