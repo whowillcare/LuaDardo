@@ -1,7 +1,6 @@
 import '../../lua.dart';
 import '../types/exceptions.dart';
 
-
 class CoroutineLib {
   static const Map<String, DartFunction> _coFuncs = {
     "create": _coCreate,
@@ -10,6 +9,7 @@ class CoroutineLib {
     "status": _coStatus,
     "running": _coRunning,
     "id": _coId,
+    "debug": _coDebug,
   };
 
   static int openCoroutineLib(LuaState ls) {
@@ -51,8 +51,7 @@ class CoroutineLib {
     try {
       if (co.getStatus() == ThreadStatus.luaOk) {
         co.call(nArgs, nRets - 1);
-      }
-      else if (co.getStatus() == ThreadStatus.luaYield) {
+      } else if (co.getStatus() == ThreadStatus.luaYield) {
         co.setStatus(ThreadStatus.luaOk);
         co.resume(nArgs);
       }
@@ -62,8 +61,7 @@ class CoroutineLib {
         ls.pushBoolean(true);
         ls.xmove(co, nRets);
         return nRets + 1;
-      }
-      else {
+      } else {
         String msg = 'error: $e\n\n${s.toString()}\n\n${co.traceStack()}';
         print(msg);
         ls.pushBoolean(false);
@@ -75,8 +73,7 @@ class CoroutineLib {
     co.setStatus(ThreadStatus.luaDead);
     if (nRets == 1) {
       ls.pushBoolean(true);
-    }
-    else if (nRets > 1){
+    } else if (nRets > 1) {
       ls.pushBoolean(true);
       ls.xmove(co, nRets - 1);
     }
@@ -87,15 +84,12 @@ class CoroutineLib {
     LuaState? co = ls.toThread(1);
     if (co == null) {
       ls.pushString("dead");
-    }
-    else {
+    } else {
       if (co.runningId() == ls.runningId()) {
         ls.pushString("running");
-      }
-      else if (co.getStatus() == ThreadStatus.luaDead) {
+      } else if (co.getStatus() == ThreadStatus.luaDead) {
         ls.pushString("dead");
-      }
-      else {
+      } else {
         ls.pushString("suspended");
       }
     }
@@ -118,10 +112,14 @@ class CoroutineLib {
     LuaState? co = ls.toThread(1);
     if (co == null) {
       ls.pushNil();
-    }
-    else {
+    } else {
       ls.pushInteger(co.runningId());
     }
+    return 1;
+  }
+
+  static int _coDebug(LuaState ls) {
+    ls.pushString(ls.debugThread());
     return 1;
   }
 }

@@ -70,6 +70,61 @@ class LuaStateImpl implements LuaState, LuaVM {
     id = newId;
   }
 
+  @override
+  void clearThreadWeakRef() {
+    getSubTable(luaRegistryIndex, "_THREADS");
+    LuaType _t = getField(-1, "_THREAD_CACHE");
+    if (_t != LuaType.luaNil) {
+      Userdata threadMap = toUserdata(-1)!;
+      ThreadsMap map = threadMap.data as ThreadsMap;
+
+      List<int> ids = <int>[];
+
+      for (MapEntry<int, ThreadCache> entry in map.entries) {
+        if (entry.value.pLuaState!.target == null) {
+          ids.add(entry.key);
+        }
+      }
+
+      for (int id in ids) {
+        map.remove(id);
+      }
+    }
+
+    pop(2);
+  }
+
+  @override
+  String debugThread() {
+    getSubTable(luaRegistryIndex, "_THREADS");
+    LuaType _t = getField(-1, "_THREAD_CACHE");
+    int fullCount = 0;
+    int freeCount = 0;
+    if (_t == LuaType.luaNil) {
+    } else {
+      Userdata threadMap = toUserdata(-1)!;
+      ThreadsMap map = threadMap.data as ThreadsMap;
+      for (MapEntry<int, ThreadCache> entry in map.entries) {
+        if (entry.value.pLuaState!.target == null) {
+          freeCount++;
+        } else {
+          fullCount++;
+        }
+      }
+    }
+    pop(1);
+
+    int curId = -1;
+    _t = getField(-1, "_THREAD_ID_GEN");
+    if (_t != LuaType.luaNil) {
+      curId = toInteger(-1);
+    }
+    pop(1);
+
+    pop(1);
+    return "$fullCount full, $freeCount free, current id: $curId";
+  }
+
   void _updateThreadCache(int newId) {
     getSubTable(luaRegistryIndex, "_THREADS");
     LuaType _t = getField(-1, "_THREAD_CACHE");

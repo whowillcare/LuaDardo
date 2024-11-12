@@ -29,3 +29,7 @@
 
 ## 0.0.9
 * fix bug of str regexp
+
+
+## 0.0.10
+# add debug for coroutine

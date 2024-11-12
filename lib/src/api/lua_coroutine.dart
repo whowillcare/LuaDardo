@@ -2,7 +2,6 @@ import 'lua_state.dart';
 import 'lua_type.dart';
 
 abstract class LuaCoroutineLib {
-
   LuaState? toThread(int idx);
 
   void pushThread(LuaState L);
@@ -12,6 +11,10 @@ abstract class LuaCoroutineLib {
   Object? popObject();
 
   LuaState newThread();
+
+  String debugThread();
+
+  void clearThreadWeakRef();
 
   void setStatus(ThreadStatus status);
 
