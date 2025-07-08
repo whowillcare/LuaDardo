@@ -1,6 +1,7 @@
+import './lua_table.dart';
 
 class Userdata<T>{
-
+  LuaTable? metatable;
   final List<T?> _data = List.filled(1,null);
 
   T? get data => _data.first;

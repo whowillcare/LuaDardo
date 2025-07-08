@@ -284,7 +284,7 @@ class Instructions {
     int c = Instruction.getC(i);
     pushFuncAndArgs(a, 3, vm);
     vm.call(2, c);
-    popResults(a + 3, c + 1, vm);
+    vm.popResults(a + 3, c + 1);
   }
 
   // if R(A+1) ~= nil then {
@@ -391,7 +391,7 @@ class Instructions {
     if (b != 1) {
       // b==0 or b>1
       vm.loadVararg(b - 1);
-      popResults(a, b, vm);
+      vm.popResults(a, b);
     }
   }
 
@@ -403,7 +403,7 @@ class Instructions {
     int c = 0;
     int nArgs = pushFuncAndArgs(a, b, vm);
     vm.call(nArgs, c - 1);
-    popResults(a, c, vm);
+    vm.popResults(a, c);
   }
 
   // R(A), ... ,R(A+C-2) := R(A)(R(A+1), ... ,R(A+B-1))
@@ -413,7 +413,7 @@ class Instructions {
     int c = Instruction.getC(i);
     int nArgs = pushFuncAndArgs(a, b, vm);
     vm.call(nArgs, c - 1);
-    popResults(a, c, vm);
+    vm.popResults(a, c);
   }
 
   // return R(A), ... ,R(A+B-2)
@@ -425,6 +425,7 @@ class Instructions {
     } else if (b > 1) {
       // b-1 return values
       vm.checkStack(b - 1);
+      vm.balanceClosureNResults();
       for (int j = a; j <= a + b - 2; j++) {
         vm.pushValue(j);
       }
@@ -455,20 +456,6 @@ class Instructions {
       vm.pushValue(i);
     }
     vm.rotate(vm.registerCount() + 1, x - a);
-  }
-
-  static void popResults(int a, int c, LuaVM vm) {
-    if (c == 1) {
-      // no results
-    } else if (c > 1) {
-      for (int i = a + c - 2; i >= a; i--) {
-        vm.replace(i);
-      }
-    } else {
-      // leave results on stack
-      vm.checkStack(1);
-      vm.pushInteger(a);
-    }
   }
 
   /* upvalues */

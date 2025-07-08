@@ -1,19 +1,35 @@
-## 0.0.5
-* Fix issues [#10](https://github.com/arcticfox1919/LuaDardo/issues/10)
-* Fix warning
 
-## 0.0.4
-* Upgrade null safety
-
-## 0.0.3
-* Fix the bug of the table constructor
-* Add auxiliary API for reference(`ref`/`unRef`)
-
-## 0.0.2
-* Add Lua userdata support
-* Fix lexical analysis BUG
 
 ## 0.0.1
-* A full lua virtual machine
-* Support some standard libraries, e.g. String, Math, etc.
-* Experimental nature only, not yet fully tested
+* clone from lua_dardo
+* Coroutine added such as [create, resume, yield, status, running].
+
+## 0.0.2
+* update README.md
+
+## 0.0.3
+* fix bug in coroutine
+
+## 0.0.4
+* fix num minus bug
+
+## 0.0.5
+* refactor the regexp to be consistent with the lua
+
+## 0.0.6
+* fix bug in regexp, if find empty string will return pos
+* OP_CODE OP_RETURN will balance the max stack size for return stack
+
+## 0.0.7
+* add rawGetP rawSetP
+* refactor the code test
+
+## 0.0.8
+* fix bug of coroutine return arg num
+
+## 0.0.9
+* fix bug of str regexp
+
+
+## 0.0.10
+# add debug for coroutine

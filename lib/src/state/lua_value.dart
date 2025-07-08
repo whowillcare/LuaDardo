@@ -1,7 +1,8 @@
-import 'package:lua_dardo/src/state/lua_userdata.dart';
+import 'package:lua_dardo_co/src/state/lua_userdata.dart';
 
 import '../api/lua_type.dart';
 import '../number/lua_number.dart';
+import '../api/lua_state.dart';
 import 'closure.dart';
 import 'lua_table.dart';
 
@@ -21,8 +22,10 @@ class LuaValue {
       return LuaType.luaFunction;
     } else if (val is Userdata) {
       return LuaType.luaUserdata;
+    } else if (val is LuaState) {
+      return LuaType.luaThread;
     } else {
-      throw Exception("TODO");
+      return LuaType.luaLightUserdata;
     }
   }
 

@@ -2,22 +2,21 @@ import 'package:lua_dardo_co/lua.dart';
 import 'package:test/test.dart';
 
 
-bool testOS(){
-  try{
+bool testIO() {
+  try {
     LuaState state = LuaState.newState();
     state.openLibs();
     state.loadString(r'''
-local start = os.clock()
+local f = io.open('test.txt', 'w')
+f:write('hel')
+f:close()
 
-local s = 0
-for i = 1, 100000 do
-      s = s + i;
-end
-
-print('sec:'..(os.clock()-start))
+f = io.open('test.txt', 'r')
+print(f:read('*a'))
+f:close()
 ''');
     state.pCall(0, 0, 1);
-  }catch(e,s){
+  } catch (e, s) {
     print('$e\n$s');
     return false;
   }
@@ -25,7 +24,7 @@ print('sec:'..(os.clock()-start))
 }
 
 void main() {
-  test('lua OS standard library test', () {
-    expect(testOS(), true);
+  test('lua IO standard library test', () {
+    expect(testIO(), true);
   });
 }

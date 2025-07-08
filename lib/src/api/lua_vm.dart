@@ -18,4 +18,6 @@ abstract class LuaVM extends LuaState {
   void loadProto(int idx);
 
   void closeUpvalues(int a);
+
+  void popResults(int a, int c);
 }
