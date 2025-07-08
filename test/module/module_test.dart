@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:lua_dardo_co/lua.dart';
+import 'package:lua_dardo/lua.dart';
 
 int callLuaAdd(int a, int b) {
   Directory.current = './test/module/';
