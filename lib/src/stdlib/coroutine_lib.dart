@@ -164,7 +164,7 @@ class CoroutineLib {
           innerLs.xmove(co, n);
           return n;
         } else {
-          throw LuaRuntimeException("coroutine error: $e");
+          throw Exception("coroutine error: $e");
         }
       }
 
