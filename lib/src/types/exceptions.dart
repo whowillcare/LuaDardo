@@ -1,5 +1,8 @@
 class LuaYieldException implements Exception {
-  LuaYieldException();
+  final int nResults;
+
+  LuaYieldException(this.nResults);
+
   @override
-  String toString() => 'LuaYieldException';
+  String toString() => 'LuaYieldException(nResults: $nResults)';
 }

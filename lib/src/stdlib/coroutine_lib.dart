@@ -6,6 +6,7 @@ class CoroutineLib {
     "create": _coCreate,
     "resume": _coResume,
     "yield": _coYield,
+    "wrap": _coWrap,
     "status": _coStatus,
     "running": _coRunning,
     "id": _coId,
@@ -37,6 +38,13 @@ class CoroutineLib {
       return 2;
     }
 
+    // 🚨 Add this check for "cannot resume non-suspended coroutine"
+    if (co.runningId() == ls.runningId()) {
+      ls.pushBoolean(false);
+      ls.pushString("cannot resume non-suspended coroutine");
+      return 2;
+    }
+
     if (co.getStatus() == ThreadStatus.luaDead) {
       ls.pushBoolean(false);
       ls.pushString("cannot resume dead coroutine");
@@ -57,10 +65,10 @@ class CoroutineLib {
       }
     } catch (e, s) {
       if (e is LuaYieldException) {
-        nRets = co.getTop();
+        final n = e.nResults;
         ls.pushBoolean(true);
-        ls.xmove(co, nRets);
-        return nRets + 1;
+        ls.xmove(co, n);
+        return n + 1;
       } else {
         String msg = 'error: $e\n\n${s.toString()}\n\n${co.traceStack()}';
         print(msg);
@@ -97,10 +105,9 @@ class CoroutineLib {
   }
 
   static int _coYield(LuaState ls) {
+    final nResults = ls.getTop(); // Number of values to yield
     ls.setStatus(ThreadStatus.luaYield);
-    throw LuaYieldException();
-    // print('yielding');
-    // return 0;
+    throw LuaYieldException(nResults);
   }
 
   static int _coRunning(LuaState ls) {
@@ -122,4 +129,54 @@ class CoroutineLib {
     ls.pushString(ls.debugThread());
     return 1;
   }
+
+  static int _coWrap(LuaState ls) {
+    if (!ls.isFunction(1)) {
+      ls.pushNil();
+      return 1;
+    }
+
+    LuaState newCo = ls.newThread();
+    newCo.xmove(ls, 1); // move function to coroutine
+
+    // wrap returns a function that resumes the coroutine
+    ls.pushDartFunction((LuaState innerLs) {
+      LuaState co = newCo;
+      int nargs = innerLs.getTop();
+
+      co.xmove(innerLs, nargs); // move arguments into coroutine
+
+      int nRets = innerLs.getCurrentNResults();
+      if (nRets > 0) {
+        co.resetTopClosureNResults(nRets - 1);
+      }
+
+      try {
+        if (co.getStatus() == ThreadStatus.luaOk) {
+          co.call(nargs, nRets - 1);
+        } else if (co.getStatus() == ThreadStatus.luaYield) {
+          co.setStatus(ThreadStatus.luaOk);
+          co.resume(nargs);
+        }
+      } catch (e) {
+        if (e is LuaYieldException) {
+          int n = e.nResults;
+          innerLs.xmove(co, n);
+          return n;
+        } else {
+          throw LuaRuntimeException("coroutine error: $e");
+        }
+      }
+
+      if (co.getStatus() == ThreadStatus.luaDead) {
+        co.setStatus(ThreadStatus.luaDead);
+      }
+
+      innerLs.xmove(co, co.getTop());
+      return innerLs.getTop();
+    });
+
+    return 1;
+  }
+
 }
