@@ -76,4 +76,48 @@ void main() {
     await completer.future;
     expect(executed, true);
   });
+
+  test('Lua functions passed to Dart can be executed', () async {
+    LuaState state = LuaState.newState();
+    state.openLibs();
+
+    int calledCount = 0;
+    String resultString = "";
+
+    state.registerAsync('execute_callbacks', (args) async {
+      final callback = args[0] as Function;
+      final config = args[1] as Map;
+      
+      final onSuccess = config['onSuccess'] as Function;
+
+      await Future.delayed(Duration(milliseconds: 50));
+      
+      final result1 = callback(["hello from dart"]);
+      resultString += result1;
+      
+      final result2 = onSuccess([42]);
+      calledCount += (result2 as num).toInt();
+      
+      return true;
+    });
+
+    final script = '''
+      local function my_callback(msg)
+          return msg .. " (processed by Lua)"
+      end
+      
+      local config = {
+          onSuccess = function(num)
+              return num * 2
+          end
+      }
+
+      await(execute_callbacks(my_callback, config))
+    ''';
+
+    await state.doAsyncString(script);
+    
+    expect(resultString, 'hello from dart (processed by Lua)');
+    expect(calledCount, 84); // 42 * 2
+  });
 }

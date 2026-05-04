@@ -1732,6 +1732,22 @@ class LuaStateImpl implements LuaState, LuaVM {
         }
         return map;
       }
+    } else if (val is Closure) {
+      return (List<dynamic> args) {
+        int topBefore = this.getTop();
+        this._stack!.push(val);
+        for (var arg in args) {
+          _dartToLua(this, arg);
+        }
+        if (this.pCall(args.length, 1, 0) != ThreadStatus.luaOk) {
+          var errorMsg = this.toStr(-1);
+          this.setTop(topBefore);
+          throw Exception("Lua execution error: \$errorMsg");
+        }
+        var result = _luaToDart(this.toPointer(-1));
+        this.setTop(topBefore);
+        return result;
+      };
     } else if (val is int || val is double || val is bool || val is String || val == null) {
       return val;
     }
@@ -1773,19 +1789,7 @@ class LuaStateImpl implements LuaState, LuaVM {
       int nArgs = ls.getTop();
       List<dynamic> args = [];
       for (int i = 1; i <= nArgs; i++) {
-        if (ls.isInteger(i)) {
-          args.add(ls.toInteger(i));
-        } else if (ls.isNumber(i)) {
-          args.add(ls.toNumber(i));
-        } else if (ls.isString(i)) {
-          args.add(ls.toStr(i));
-        } else if (ls.isBoolean(i)) {
-          args.add(ls.toBoolean(i));
-        } else if (ls.isTable(i)) {
-          args.add(_luaToDart(ls.toPointer(i)));
-        } else {
-          args.add(ls.toPointer(i));
-        }
+        args.add(_luaToDart(ls.toPointer(i)));
       }
       
       final futureId = ++_futureIdGen;

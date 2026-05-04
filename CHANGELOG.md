@@ -1,4 +1,7 @@
 
+## 0.0.14
+* Support passing Lua functions to Dart inside `registerAsync` callbacks. Functions (and those nested within tables) are automatically mapped to Dart `Function(List<dynamic>)`.
+
 ## 0.0.13
 * Add async Dart Future support inside Lua coroutines with `await` and `doAsyncString`.
 * Support translating Maps and Lists between LuaTable and Dart automatically.
