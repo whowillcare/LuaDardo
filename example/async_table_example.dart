@@ -1,4 +1,4 @@
-import 'package:lua_dardo/lua.dart';
+import 'package:lua_dardo_enhanced/lua.dart';
 import 'dart:async';
 
 void main() async {

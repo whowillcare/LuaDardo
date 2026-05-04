@@ -187,14 +187,7 @@ class MathLib{
     return 1;
   }
 
-  static _pushNumInt(LuaState ls,double d) {
-    var i = d.toInt();
-    if (d - i.toDouble() == 0){ /* does 'd' fit in an integer? */
-      ls.pushInteger(i); /* result is integer */
-    } else {
-      ls.pushNumber(d);  /* result is float */
-    }
-  }
+
 
   static int _ceil(LuaState ls){
     if(ls.isInteger(1)){

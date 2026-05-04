@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io';
 
-import 'package:lua_dardo/src/state/lua_userdata.dart';
-import 'package:lua_dardo/src/stdlib/os_lib.dart';
+import 'package:lua_dardo_enhanced/src/state/lua_userdata.dart';
+import 'package:lua_dardo_enhanced/src/stdlib/os_lib.dart';
 // import 'package:stack_trace/stack_trace.dart';
 
 import '../stdlib/math_lib.dart';
@@ -541,8 +541,6 @@ class LuaStateImpl implements LuaState, LuaVM {
         return Comparison.lt(a, b, this);
       case CmpOp.luaOpLe:
         return Comparison.le(a, b, this);
-      default:
-        throw Exception("invalid compare op!");
     }
   }
 

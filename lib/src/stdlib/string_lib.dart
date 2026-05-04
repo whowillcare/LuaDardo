@@ -460,50 +460,6 @@ class StringLib {
     return 2;
   }
 
-// string.gsub (s, pattern, repl [, n])
-// http://www.lua.org/manual/5.3/manual.html#pdf-string.gsub
-  static int _strGsubStr(LuaState ls) {
-    var s = ls.checkString(1);
-    var pattern = ls.checkString(2)!;
-    var repl = ls.checkString(3); // todo
-    var n = ls.optInteger(4, -1)!;
-
-    var r = gsub(s, pattern, repl, n);
-    var newStr = r[0];
-    var nMatches = r[1];
-    ls.pushString(newStr);
-    ls.pushInteger(nMatches);
-    return 2;
-  }
-
-  static List<dynamic> gsub(String? s, String pattern, String? repl, int n) {
-    final regExp = RegExp(pattern);
-    RegExpMatch? regMatch;
-
-    List<Match> indexes = [];
-    for (var i = 0; i < n; i++) {
-      regMatch = regExp.firstMatch(s!);
-      if (regMatch == null) break;
-      indexes.add(regMatch);
-      s = s.substring(regMatch.end + 1);
-    }
-
-    if (indexes.isEmpty) {
-      return List.filled(2,null)
-        ..[0] = s
-        ..[1] = 0;
-    }
-
-    var nMatches = indexes.length;
-    var lastEnd = indexes[nMatches - 1].end;
-    var head = s!.substring(0, lastEnd);
-    var tail = s.substring(lastEnd);
-
-    var newHead = head.replaceAll(regExp, repl!);
-    return List.filled(2,null)
-      ..[0] = '$newHead$tail'
-      ..[1] = nMatches;
-  }
 
 // string.gmatch (s, pattern)
 // http://www.lua.org/manual/5.3/manual.html#pdf-string.gmatch
