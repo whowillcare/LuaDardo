@@ -16,6 +16,9 @@ import '../stdlib/io_lib.dart';
 import 'package:sprintf/sprintf.dart';
 
 import '../number/lua_number.dart';
+import '../types/exceptions.dart';
+import 'dart:async';
+
 
 import '../stdlib/basic_lib.dart';
 import '../api/lua_state.dart';
@@ -47,6 +50,9 @@ class LuaStateImpl implements LuaState, LuaVM {
   final List<HookContext> hookList = [];
 
   int id = 0;
+
+  final Map<int, Future<dynamic>> _pendingFutures = {};
+  int _futureIdGen = 0;
 
   LuaStateImpl() {
     registry!.put(luaRidxGlobals, LuaTable(0, 0));
@@ -1700,5 +1706,178 @@ class LuaStateImpl implements LuaState, LuaVM {
 
 //**************************************************
 //**************************************************
-//**************************************************
+
+  dynamic _luaToDart(Object? val) {
+    if (val is LuaTable) {
+      bool isArray = val.map == null || val.map!.isEmpty;
+      if (isArray) {
+        List<dynamic> list = [];
+        if (val.arr != null) {
+          for (int i = 0; i < val.arr!.length; i++) {
+            list.add(_luaToDart(val.arr![i]));
+          }
+        }
+        return list;
+      } else {
+        Map<dynamic, dynamic> map = {};
+        if (val.arr != null) {
+          for (int i = 0; i < val.arr!.length; i++) {
+            if (val.arr![i] != null) {
+              map[i + 1] = _luaToDart(val.arr![i]);
+            }
+          }
+        }
+        if (val.map != null) {
+          val.map!.forEach((k, v) {
+            map[_luaToDart(k)] = _luaToDart(v);
+          });
+        }
+        return map;
+      }
+    } else if (val is int || val is double || val is bool || val is String || val == null) {
+      return val;
+    }
+    return val;
+  }
+
+  void _dartToLua(LuaState co, dynamic result) {
+    if (result == null) {
+      co.pushNil();
+    } else if (result is int) {
+      co.pushInteger(result);
+    } else if (result is double) {
+      co.pushNumber(result);
+    } else if (result is bool) {
+      co.pushBoolean(result);
+    } else if (result is String) {
+      co.pushString(result);
+    } else if (result is List) {
+      co.newTable();
+      for (int i = 0; i < result.length; i++) {
+        _dartToLua(co, result[i]);
+        co.setI(-2, i + 1);
+      }
+    } else if (result is Map) {
+      co.newTable();
+      result.forEach((k, v) {
+        _dartToLua(co, k);
+        _dartToLua(co, v);
+        co.setTable(-3);
+      });
+    } else {
+      co.pushString(result.toString());
+    }
+  }
+
+  @override
+  void registerAsync(String name, Future<dynamic> Function(List<dynamic>) fn) {
+    pushDartFunction((ls) {
+      int nArgs = ls.getTop();
+      List<dynamic> args = [];
+      for (int i = 1; i <= nArgs; i++) {
+        if (ls.isInteger(i)) {
+          args.add(ls.toInteger(i));
+        } else if (ls.isNumber(i)) {
+          args.add(ls.toNumber(i));
+        } else if (ls.isString(i)) {
+          args.add(ls.toStr(i));
+        } else if (ls.isBoolean(i)) {
+          args.add(ls.toBoolean(i));
+        } else if (ls.isTable(i)) {
+          args.add(_luaToDart(ls.toPointer(i)));
+        } else {
+          args.add(ls.toPointer(i));
+        }
+      }
+      
+      final futureId = ++_futureIdGen;
+      _pendingFutures[futureId] = fn(args);
+      
+      ls.newTable();
+      ls.pushBoolean(true);
+      ls.setField(-2, "__dart_future");
+      ls.pushInteger(futureId);
+      ls.setField(-2, "_id");
+      
+      return 1;
+    });
+    setGlobal(name);
+  }
+
+  @override
+  Future<void> doAsyncString(String script) async {
+    final bootstrap = '''
+local PENDING = {}
+function await(value)
+    if type(value) == "table" and value.__dart_future then
+        return coroutine.yield(value)
+    end
+    return value
+end
+''';
+    
+    if (loadString(bootstrap) != ThreadStatus.luaOk) {
+      throw Exception("Failed to load bootstrap");
+    }
+    if (pCall(0, 0, 0) != ThreadStatus.luaOk) {
+      throw Exception("Failed to run bootstrap");
+    }
+
+    LuaState co = newThread();
+    if (co.loadString(script) != ThreadStatus.luaOk) {
+      throw Exception("Failed to load script: \${co.toStr(-1)}");
+    }
+
+    int nRets = 0;
+    while (true) {
+      try {
+        if (co.getStatus() == ThreadStatus.luaOk) {
+          co.call(nRets, -1);
+        } else if (co.getStatus() == ThreadStatus.luaYield) {
+          co.setStatus(ThreadStatus.luaOk);
+          co.resume(nRets);
+        }
+      } catch (e) {
+        if (e is LuaYieldException) {
+          int n = e.nResults;
+          if (co.isTable(-1)) {
+            co.pushString("__dart_future");
+            LuaType type = co.getTable(-2);
+            bool isFuture = false;
+            if (type == LuaType.luaBoolean) {
+              isFuture = co.toBoolean(-1);
+            }
+            co.pop(1); 
+            
+            if (isFuture) {
+              co.pushString("_id");
+              co.getTable(-2);
+              int fid = co.toInteger(-1);
+              co.pop(1); 
+              
+              co.pop(n); 
+              
+              final future = _pendingFutures[fid];
+              if (future != null) {
+                final result = await future;
+                _pendingFutures.remove(fid);
+                
+                _dartToLua(co, result);
+                
+                nRets = 1;
+                continue;
+              }
+            }
+          }
+          nRets = 0;
+          continue;
+        } else {
+          rethrow;
+        }
+      }
+      
+      co.setStatus(ThreadStatus.luaDead);
+      break;
+    }
+  }
 }

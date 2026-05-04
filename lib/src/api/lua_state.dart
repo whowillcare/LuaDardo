@@ -6,7 +6,7 @@ import 'lua_coroutine.dart';
 import 'lua_debug.dart';
 import '../state/lua_state_impl.dart';
 
-
+import 'dart:async';
 
 const luaMinStack = 20;
 const luaMaxStack = 1000000;
@@ -23,4 +23,7 @@ abstract class LuaState extends LuaBasicAPI implements LuaAuxLib, LuaCoroutineLi
     return LuaStateImpl();
   }
 
+  // Async support
+  void registerAsync(String name, Future<dynamic> Function(List<dynamic> args) fn);
+  Future<void> doAsyncString(String script);
 }

@@ -1,4 +1,7 @@
 
+## 0.0.13
+* Add async Dart Future support inside Lua coroutines with `await` and `doAsyncString`.
+* Support translating Maps and Lists between LuaTable and Dart automatically.
 
 ## 0.0.1
 * clone from lua_dardo

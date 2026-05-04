@@ -12,18 +12,16 @@ Original : LuaDardo
 
 ```yaml
 dependencies:
-  lua_dardo_co: ^0.0.1
+  lua_dardo_enhanced: ^0.0.13
 ```
 
 ```dart
 import 'package:lua_dardo/lua.dart';
 
-
 void main(List<String> arguments) {
   LuaState state = LuaState.newState();
   state.openLibs();
   state.loadString(r'''
-
 
 local function test_a(b, c)
     print('test_a', b, c)
@@ -34,9 +32,6 @@ local function test_coroutine3()
     print('coroutine3 step 1', coroutine.running())
     local arg1, arg2 = coroutine.yield(1992)
     print('coroutine3 step 2 <<<', arg1, arg2, '>>>\n')
-
-    -- local a = nil
-    -- a = a + 1
 end
 
 local function test_coroutine2()
@@ -76,4 +71,38 @@ print('coroutine 4', coroutine.running())
 }
 ```
 
+## Async Example
+Starting with `0.0.13`, you can leverage seamless integration with Dart `Future` using `registerAsync` and `doAsyncString`. Passing Lua Tables (`{}`) between Dart's `Map`/`List` is also handled automatically.
 
+```dart
+import 'package:lua_dardo/lua.dart';
+
+void main() async {
+  LuaState lua = LuaState.newState();
+  lua.openLibs();
+
+  // Register an asynchronous Dart function
+  lua.registerAsync("fetch_user", (args) async {
+    final Map request = args[0] as Map;
+    await Future.delayed(Duration(seconds: 1)); // Work...
+
+    // Return a structured Dart Map, which converts back to a Lua Table
+    return {
+      'status': 'success',
+      'id': request['id'],
+      'roles': ['admin', 'user']
+    };
+  });
+
+  // Run the Lua script using `doAsyncString`
+  await lua.doAsyncString('''
+    local payload = { id = 404 }
+    
+    -- Use await() to suspend execution until Future resolves
+    local response = await(fetch_user(payload))
+    
+    print(response.status)
+    print(response.roles[1])
+  ''');
+}
+```
